@@ -167,10 +167,10 @@
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <script>
-    // Inisialisasi Peta Indonesia default
+    // Inisialisasi Peta - Difokuskan langsung ke area kluster Lalangon / Manding
     var map = L.map('map', {
-        center: [-2.5489, 118.0149],
-        zoom: 5,
+        center: [-7.0012, 113.8445],
+        zoom: 15,
         dragging: false
     });
 
@@ -196,6 +196,48 @@
     let isDragging = false;
     let lastCoord = "";
 
+    // --- DATA PIN LOKASI PABRIK TAHU ---
+    const dataPabrikTahu = [
+        {
+            nama: "Pabrik Tahu H. Ali",
+            alamat: "Dusun Ganjur, Lalangon",
+            lat: -7.002150,
+            lng: 113.843200
+        },
+        {
+            nama: "Pabrik Tahu Amsariyono",
+            alamat: "Dusun Ganjur, Lalangon",
+            lat: -7.001800,
+            lng: 113.845100
+        },
+        {
+            nama: "Hj. Ami Pabrik Tahu Dan Agen Kedelai Tahu",
+            alamat: "Ganjur, Lalangon",
+            lat: -7.000950,
+            lng: 113.842900
+        },
+        {
+            nama: "Pabrik Tahu 4 Saudara (PAK TALLEP)",
+            alamat: "Jalan Raya Manding, Ganjur, Lalangon",
+            lat: -6.999500,
+            lng: 113.844200
+        },
+        {
+            nama: "Tahu Nikmat H. Rahmat",
+            alamat: "Lalangon Area",
+            lat: -7.003100,
+            lng: 113.846500
+        }
+    ];
+
+    // Sematkan marker ke peta menggunakan perulangan Array
+    dataPabrikTahu.forEach(function(item) {
+        L.marker([item.lat, item.lng])
+            .addTo(map)
+            .bindPopup(`<b>🏭 ${item.nama}</b><br><small class="text-muted">${item.alamat}</small><br><span style="color:#2b6cb0; font-family:monospace;">${item.lat}, ${item.lng}</span>`);
+    });
+    // ------------------------------------
+
     // Fitur Toggle Aktifkan Geser Peta
     document.getElementById('toggle-drag').addEventListener('click', function() {
         isDragging = !isDragging;
@@ -212,7 +254,7 @@
         }
     });
 
-    // Klik Pada Peta untuk mengambil koordinat
+    // Klik Pada Peta untuk mengambil koordinat manual
     map.on('click', function(e) {
         const lat = e.latlng.lat.toFixed(6);
         const lng = e.latlng.lng.toFixed(6);

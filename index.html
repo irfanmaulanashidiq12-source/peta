@@ -5,11 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pencarian Lokasi & Koordinat Modern</title>
 
-    <!-- Bootstrap & Google Fonts -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
     <style>
@@ -105,7 +103,7 @@
     
     <div class="app-header text-center">
         <h1 class="fw-bold m-0" style="letter-spacing: -0.5px;">🗺️ GeoFinder Pro</h1>
-        <p class="lead fs-6 text-white-50 mt-2 mb-0">Lokasi Presisi Dusun Ganjur, Desa Lalangon, Sumenep</p>
+        <p class="lead fs-6 text-white-50 mt-2 mb-0">Lokasi Presisi Desa Lalangon, Sumenep</p>
     </div>
 
     <div class="row g-4">
@@ -162,11 +160,10 @@
     </div>
 </div>
 
-<!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
-    // --- LAYERS ---
+    // --- PILIHAN LAYER PETA ---
     var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors',
         maxZoom: 19
@@ -177,11 +174,11 @@
         maxZoom: 20
     });
 
-    // --- INISIALISASI KE DESA LALANGON YANG SEBENARNYA ---
-    var lalangonCenter = [-7.003183, 113.818227];
+    // --- INISIALISASI KE KOORDINAT YANG ANDA BERIKAN ---
+    var lalangonCenter = [-6.982557, 113.854988];
     var map = L.map('map', {
         center: lalangonCenter,
-        zoom: 15,
+        zoom: 16,
         dragging: false, 
         layers: [osm]
     });
@@ -192,7 +189,7 @@
     };
     L.control.layers(baseMaps).addTo(map);
 
-    // Marker Utama
+    // Marker Utama Interaktif
     var mainMarker = L.marker(lalangonCenter, { draggable: true }).addTo(map);
     updateCoords(lalangonCenter[0], lalangonCenter[1]);
 
@@ -211,42 +208,44 @@
         updateCoords(e.latlng.lat, e.latlng.lng);
     });
 
-    // --- TITIK AKTIF SEKITAR DESA LALANGON ---
+    // --- 5 TITIK PABRIK TAHU DISEBAR DI SEKITAR KOORDINAT ANDA ---
     var pabrikTahuData = [
         {
-            nama: "Klaster Usaha Tahu Lalangon 1",
-            alamat: "Dusun Ganjur, Desa Lalangon",
-            coords: [-7.003183, 113.818227]
+            nama: "Pabrik Tahu H. Ali",
+            alamat: "Desa Lalangon Utama",
+            coords: [-6.982557, 113.854988] // Titik Pusat Utama Anda
         },
         {
-            nama: "Klaster Usaha Tahu Lalangon 2",
-            alamat: "Desa Lalangon, Manding",
-            coords: [-7.004500, 113.819500]
+            nama: "Pabrik Tahu Amsariyono",
+            alamat: "Desa Lalangon (Sektor Timur)",
+            coords: [-6.983100, 113.856200]
         },
         {
-            nama: "Klaster Usaha Tahu Lalangon 3",
-            alamat: "Area Sawah Desa Lalangon",
-            coords: [-7.002100, 113.817100]
+            nama: "Hj. Ami Pabrik Tahu & Agen Kedelai",
+            alamat: "Desa Lalangon (Sektor Barat)",
+            coords: [-6.982100, 113.853500]
         },
         {
-            nama: "Klaster Usaha Tahu Lalangon 4",
-            alamat: "Lalangon Barat",
-            coords: [-7.005800, 113.816500]
+            nama: "Pabrik Tahu 4 Saudara (PAK TALLEP)",
+            alamat: "Desa Lalangon Utara",
+            coords: [-6.980800, 113.855600]
         },
         {
-            nama: "Klaster Usaha Tahu Lalangon 5",
-            alamat: "Lalangon Utara",
-            coords: [-6.999900, 113.820100]
+            nama: "Tahu Nikmat H. Rahmat",
+            alamat: "Desa Lalangon Selatan",
+            coords: [-6.984200, 113.854100]
         }
     ];
 
+    // Menampilkan marker permanen
     pabrikTahuData.forEach(function(pabrik) {
         var staticMarker = L.marker(pabrik.coords).addTo(map);
         var popupContent = `
             <div style="font-family: 'Plus Jakarta Sans', sans-serif; width: 190px;">
                 <h6 style="margin: 0 0 4px 0; font-weight: 700; color: #3182ce;">🏭 ${pabrik.nama}</h6>
                 <p style="margin: 0 0 2px 0; font-size: 11px; color: #718096;">📍 ${pabrik.alamat}</p>
-                <button class="btn btn-primary btn-sm py-1 px-2 w-100" style="font-size: 11px; border-radius: 6px; margin-top:5px;" 
+                <p style="margin: 0 0 8px 0; font-size: 10px; font-family: monospace; color: #4a5568;">⏱️ ${pabrik.coords[0].toFixed(6)}, ${pabrik.coords[1].toFixed(6)}</p>
+                <button class="btn btn-primary btn-sm py-1 px-2 w-100" style="font-size: 11px; border-radius: 6px;" 
                     onclick="selectPabrik(${pabrik.coords[0]}, ${pabrik.coords[1]})">
                     🎯 Pilih Titik Ini
                 </button>
@@ -261,7 +260,7 @@
         map.setView([lat, lng], 17);
     };
 
-    // --- FUNGSIONALITAS ---
+    // --- FUNGSIONALITAS PANEL KONTROL ---
     function searchLocation() {
         var query = document.getElementById('search').value;
         if (!query) return alert('Silakan masukkan nama tempat!');
@@ -308,7 +307,7 @@
         var lat = document.getElementById('lat').innerText;
         var lng = document.getElementById('lng').innerText;
         var textToCopy = lat + ", " + lng;
-        navigator.clipboard.writeText(textToCopy).then(() => alert('Disalin: ' + textToCopy));
+        navigator.clipboard.writeText(textToCopy).then(() => alert('Koordinat disalin: ' + textToCopy));
     }
 </script>
 </body>

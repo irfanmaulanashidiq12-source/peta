@@ -30,12 +30,13 @@
             overflow: hidden;
         }
 
-        /* Map Container */
+        /* Map Container - Memastikan tajam dan penuh */
         #map {
-            height: 65vh;
+            height: 68vh;
             width: 100%;
             cursor: crosshair;
             z-index: 1;
+            border-radius: 12px;
         }
 
         /* Form Controls Styling */
@@ -107,7 +108,7 @@
     
     <div class="app-header text-center">
         <h1 class="fw-bold m-0" style="letter-spacing: -0.5px;">🗺️ GeoFinder Pro</h1>
-        <p class="lead fs-6 text-white-50 mt-2 mb-0">Cari lokasi, dapatkan koordinat presisi, dan salin dengan satu klik</p>
+        <p class="lead fs-6 text-white-50 mt-2 mb-0">Cari lokasi, dapatkan koordinat presisi dengan peta Satelit & Medan terbaru</p>
     </div>
 
     <div class="row g-4">
@@ -118,7 +119,7 @@
                     
                     <div class="mb-3">
                         <label class="form-label small fw-semibold text-muted">Cari Nama Tempat / Alamat</label>
-                        <input type="text" id="search" class="form-control" placeholder="Contoh: Monas, Labuan Bajo...">
+                        <input type="text" id="search" class="form-control" placeholder="Contoh: Monas, Labuan Bajo..." onkeypress="if(event.key === 'Enter') searchLocation()">
                     </div>
 
                     <div class="d-grid gap-2 mb-4">
@@ -158,7 +159,7 @@
 
         <div class="col-lg-8">
             <div class="glass-card p-2 h-100">
-                <div id="map" class="rounded-3"></div>
+                <div id="map"></div>
             </div>
         </div>
     </div>
@@ -167,192 +168,42 @@
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <script>
-    // Inisialisasi Peta - Difokuskan langsung ke area kluster Lalangon / Manding
+    // --- PILIHAN LAYER PETA BARU (LEBIH JELAS & LENGKAP) ---
+    
+    // 1. Peta Standar Jalan (OpenStreetMap)
+    var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
+        maxZoom: 19
+    });
+
+    // 2. Peta Satelit Presisi Tinggi (Google Hybrid - Ada nama jalan/tempat)
+    var googleSatellite = L.tileLayer('https://mt1.googlecom/vt/lyrs=y&x={x}&y={y}&z={z}', {
+        attribution: '&copy; Google Maps Satellite',
+        maxZoom: 20
+    });
+
+    // 3. Peta Medan / Kontur Hibrida (Google Terrain)
+    var googleTerrain = L.tileLayer('https://mt1.googlecom/vt/lyrs=p&x={x}&y={y}&z={z}', {
+        attribution: '&copy; Google Maps Terrain',
+        maxZoom: 20
+    });
+
+    // 4. Peta Topografi Alternatif (OpenTopoMap)
+    var openTopo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenTopoMap contributors',
+        maxZoom: 17
+    });
+
+    // Inisialisasi Peta - Langsung menggunakan Google Satelit sebagai default agar objek terlihat jelas
     var map = L.map('map', {
         center: [-7.0012, 113.8445],
-        zoom: 15,
-        dragging: false
+        zoom: 16, // Zoom dinaikkan sedikit agar langsung fokus jelas ke lokasi cluster
+        dragging: false,
+        layers: [googleSatellite] // Default langsung menggunakan satelit hibrida
     });
 
-    // Layer Peta Standard
-    var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors'
-    });
-
-    // Layer Peta Satelit
-    var satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        attribution: 'Esri Satellite'
-    });
-
-    osm.addTo(map);
-
-    // Kontrol Peta Pojok Kanan Atas
-    L.control.layers({
-        "Peta Standar": osm,
-        "Satelit Bumi": satellite
-    }).addTo(map);
-
-    let marker = null;
-    let isDragging = false;
-    let lastCoord = "";
-
-    // --- DATA PIN LOKASI PABRIK TAHU ---
-    const dataPabrikTahu = [
-        {
-            nama: "Pabrik Tahu H. Ali",
-            alamat: "Dusun Ganjur, Lalangon",
-            lat: -7.002150,
-            lng: 113.843200
-        },
-        {
-            nama: "Pabrik Tahu Amsariyono",
-            alamat: "Dusun Ganjur, Lalangon",
-            lat: -7.001800,
-            lng: 113.845100
-        },
-        {
-            nama: "Hj. Ami Pabrik Tahu Dan Agen Kedelai Tahu",
-            alamat: "Ganjur, Lalangon",
-            lat: -7.000950,
-            lng: 113.842900
-        },
-        {
-            nama: "Pabrik Tahu 4 Saudara (PAK TALLEP)",
-            alamat: "Jalan Raya Manding, Ganjur, Lalangon",
-            lat: -6.999500,
-            lng: 113.844200
-        },
-        {
-            nama: "Tahu Nikmat H. Rahmat",
-            alamat: "Lalangon Area",
-            lat: -7.003100,
-            lng: 113.846500
-        }
-    ];
-
-    // Sematkan marker ke peta menggunakan perulangan Array
-    dataPabrikTahu.forEach(function(item) {
-        L.marker([item.lat, item.lng])
-            .addTo(map)
-            .bindPopup(`<b>🏭 ${item.nama}</b><br><small class="text-muted">${item.alamat}</small><br><span style="color:#2b6cb0; font-family:monospace;">${item.lat}, ${item.lng}</span>`);
-    });
-    // ------------------------------------
-
-    // Fitur Toggle Aktifkan Geser Peta
-    document.getElementById('toggle-drag').addEventListener('click', function() {
-        isDragging = !isDragging;
-        if (isDragging) {
-            map.dragging.enable();
-            this.textContent = "🖱️ Geser ON";
-            this.classList.remove('btn-secondary');
-            this.classList.add('btn-success');
-        } else {
-            map.dragging.disable();
-            this.textContent = "🖱️ Geser OFF";
-            this.classList.remove('btn-success');
-            this.classList.add('btn-secondary');
-        }
-    });
-
-    // Klik Pada Peta untuk mengambil koordinat manual
-    map.on('click', function(e) {
-        const lat = e.latlng.lat.toFixed(6);
-        const lng = e.latlng.lng.toFixed(6);
-
-        document.getElementById('lat').innerText = lat;
-        document.getElementById('lng').innerText = lng;
-        lastCoord = lat + ', ' + lng;
-
-        if (marker) {
-            map.removeLayer(marker);
-        }
-
-        marker = L.marker([lat, lng])
-            .addTo(map)
-            .bindPopup(`<b>Titik Terpilih</b><br>Koordinat: ${lat}, ${lng}`)
-            .openPopup();
-    });
-
-    // Fungsi Copy ke Clipboard
-    function copyCoord() {
-        if (lastCoord === "") {
-            alert("Silakan pilih lokasi di peta terlebih dahulu.");
-            return;
-        }
-        navigator.clipboard.writeText(lastCoord);
-        alert("Koordinat disalin: " + lastCoord);
-    }
-
-    // Geolocation API (Deteksi Lokasi Pengguna)
-    function getMyLocation() {
-        if (!navigator.geolocation) {
-            alert("Browser Anda tidak mendukung fitur deteksi GPS.");
-            return;
-        }
-
-        navigator.geolocation.getCurrentPosition(
-            function(pos) {
-                const lat = pos.coords.latitude;
-                const lng = pos.coords.longitude;
-
-                map.setView([lat, lng], 16);
-                document.getElementById('lat').innerText = lat.toFixed(6);
-                document.getElementById('lng').innerText = lng.toFixed(6);
-                lastCoord = lat.toFixed(6) + ", " + lng.toFixed(6);
-
-                if (marker) {
-                    map.removeLayer(marker);
-                }
-
-                marker = L.marker([lat, lng])
-                    .addTo(map)
-                    .bindPopup("📡 <b>Lokasi Anda Sekarang</b>")
-                    .openPopup();
-            },
-            function() {
-                alert("Izin akses lokasi/GPS ditolak oleh pengguna atau diblokir browser.");
-            }
-        );
-    }
-
-    // Fitur Search Lokasi Menggunakan OpenStreetMap Nominatim
-    function searchLocation() {
-        const query = document.getElementById('search').value;
-        if (!query) {
-            alert("Masukkan nama tempat yang ingin dicari!");
-            return;
-        }
-
-        fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.length > 0) {
-                    const lat = parseFloat(data[0].lat);
-                    const lon = parseFloat(data[0].lon);
-
-                    map.setView([lat, lon], 15);
-                    document.getElementById('lat').innerText = lat.toFixed(6);
-                    document.getElementById('lng').innerText = lon.toFixed(6);
-                    lastCoord = lat.toFixed(6) + ", " + lon.toFixed(6);
-
-                    if (marker) {
-                        map.removeLayer(marker);
-                    }
-
-                    marker = L.marker([lat, lon])
-                        .addTo(map)
-                        .bindPopup(`<b>Hasil Pencarian:</b><br>${query}<br><span style="color:#2b6cb0;">${lat.toFixed(6)}, ${lon.toFixed(6)}</span>`)
-                        .openPopup();
-                } else {
-                    alert("Lokasi tidak dapat ditemukan. Coba kata kunci lain.");
-                }
-            })
-            .catch(err => {
-                console.error(err);
-                alert("Gagal memuat data lokasi. Periksa koneksi internet Anda.");
-            });
-    }
-</script>
-
-</body>
-</html>
+    // Kontrol Peta Pojok Kanan Atas (User bisa pilih tampilan sesuka hati)
+    var baseMaps = {
+        "🛰️ Satelit Bumi (Google)": googleSatellite,
+        "⛰️ Peta Medan / Kontur": googleTerrain,
+        "🗺️ Peta Stand

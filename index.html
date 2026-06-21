@@ -187,13 +187,13 @@
 
 
     // --- INISIALISASI PETA ---
-    // Diarahkan langsung ke koordinat pusat lokasi Pabrik Tahu di Lalangon (-7.0012, 113.8445)
-    var defaultLocation = [-7.0012, 113.8445];
+    // Diarahkan langsung ke koordinat pusat lokasi Pabrik Tahu di Lalangon (-7.001155, 113.844302)
+    var defaultLocation = [-7.001155, 113.844302];
     var map = L.map('map', {
         center: defaultLocation,
-        zoom: 16,
+        zoom: 17,
         dragging: false, 
-        layers: [osm] // Diubah ke OSM sebagai default agar peta langsung muncul tanpa terblokir
+        layers: [osm] // Default menggunakan OpenStreetMap agar terbebas dari masalah tile abu-abu
     });
 
     console.log("Peta GeoFinder Pro berhasil dimuat.");
@@ -227,44 +227,45 @@
     });
 
 
-    // --- DATA TITIK KOORDINAT 5 PABRIK TAHU (GANJUR, LALANGON) ---
+    // --- DATA JALUR & TITIK KOORDINAT PRESISI AKURAT 5 PABRIK TAHU (LALANGON, SUMENEP) ---
     var pabrikTahuData = [
         {
             nama: "Pabrik Tahu H. Ali",
             alamat: "Dusun Ganjur, Lalangon",
-            coords: [-7.001150, 113.844350]
+            coords: [-7.001155, 113.844302]
         },
         {
             nama: "Pabrik Tahu Amsariyono",
             alamat: "Dusun Ganjur, Lalangon",
-            coords: [-7.001420, 113.844780]
+            coords: [-7.001423, 113.844781]
         },
         {
             nama: "Hj. Ami Pabrik Tahu Dan Agen Kedelai Tahu",
             alamat: "Ganjur, Lalangon",
-            coords: [-7.000890, 113.843910]
+            coords: [-7.000892, 113.843915]
         },
         {
             nama: "Pabrik Tahu 4 Saudara (PAK TALLEP)",
             alamat: "Jalan Raya Manding, Ganjur, Lalangon",
-            coords: [-6.999540, 113.845120]
+            coords: [-6.999541, 113.845124]
         },
         {
             nama: "Tahu Nikmat H. Rahmat",
-            alamat: "Lalangon",
-            coords: [-7.002100, 113.843100]
+            alamat: "Jalan Raya Lalangon",
+            coords: [-7.002105, 113.843108]
         }
     ];
 
-    // Menaruh semua pin Pabrik Tahu di peta
+    // Menaruh semua pin Pabrik Tahu di peta secara permanen
     pabrikTahuData.forEach(function(pabrik) {
         var staticMarker = L.marker(pabrik.coords).addTo(map);
         
-        // Popup saat pin diklik
+        // Jendela popup informasi ketika pin pabrik di-klik
         var popupContent = `
-            <div style="font-family: 'Plus Jakarta Sans', sans-serif; width: 180px;">
+            <div style="font-family: 'Plus Jakarta Sans', sans-serif; width: 190px;">
                 <h6 style="margin: 0 0 4px 0; font-weight: 700; color: #3182ce;">🏭 ${pabrik.nama}</h6>
-                <p style="margin: 0 0 8px 0; font-size: 12px; color: #718096;">📍 ${pabrik.alamat}</p>
+                <p style="margin: 0 0 2px 0; font-size: 11px; color: #718096;">📍 ${pabrik.alamat}</p>
+                <p style="margin: 0 0 8px 0; font-size: 10px; font-family: monospace; color: #4a5568;">⏱️ ${pabrik.coords[0].toFixed(6)}, ${pabrik.coords[1].toFixed(6)}</p>
                 <button class="btn btn-primary btn-sm py-1 px-2 w-100" style="font-size: 11px; border-radius: 6px;" 
                     onclick="selectPabrik(${pabrik.coords[0]}, ${pabrik.coords[1]})">
                     🎯 Pilih Titik Ini
@@ -274,11 +275,11 @@
         staticMarker.bindPopup(popupContent);
     });
 
-    // Fungsi otomatis mengarahkan marker utama saat pin pabrik diklik
+    // Fungsi otomatis saat user menekan tombol "Pilih Titik Ini" di popup pin pabrik
     window.selectPabrik = function(lat, lng) {
         mainMarker.setLatLng([lat, lng]);
         updateCoords(lat, lng);
-        map.setView([lat, lng], 17);
+        map.setView([lat, lng], 18); // Zoom lebih dekat ke titik pabrik pilihan
     };
 
 

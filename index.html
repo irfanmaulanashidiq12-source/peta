@@ -168,42 +168,145 @@
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <script>
-    // --- PILIHAN LAYER PETA BARU (LEBIH JELAS & LENGKAP) ---
+    // --- PILIHAN LAYER PETA BARU ---
     
-    // 1. Peta Standar Jalan (OpenStreetMap)
     var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors',
         maxZoom: 19
     });
 
-    // 2. Peta Satelit Presisi Tinggi (Google Hybrid - Ada nama jalan/tempat)
-    var googleSatellite = L.tileLayer('https://mt1.googlecom/vt/lyrs=y&x={x}&y={y}&z={z}', {
+    // Perbaikan typo dari googlecom menjadi google.com
+    var googleSatellite = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
         attribution: '&copy; Google Maps Satellite',
         maxZoom: 20
     });
 
-    // 3. Peta Medan / Kontur Hibrida (Google Terrain)
-    var googleTerrain = L.tileLayer('https://mt1.googlecom/vt/lyrs=p&x={x}&y={y}&z={z}', {
+    var googleTerrain = L.tileLayer('https://mt1.google.com/vt/lyrs=p&x={x}&y={y}&z={z}', {
         attribution: '&copy; Google Maps Terrain',
         maxZoom: 20
     });
 
-    // 4. Peta Topografi Alternatif (OpenTopoMap)
     var openTopo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenTopoMap contributors',
         maxZoom: 17
     });
 
-    // Inisialisasi Peta - Langsung menggunakan Google Satelit sebagai default agar objek terlihat jelas
+    // Inisialisasi Peta
+    var defaultLocation = [-7.0012, 113.8445];
     var map = L.map('map', {
-        center: [-7.0012, 113.8445],
-        zoom: 16, // Zoom dinaikkan sedikit agar langsung fokus jelas ke lokasi cluster
-        dragging: false,
-        layers: [googleSatellite] // Default langsung menggunakan satelit hibrida
+        center: defaultLocation,
+        zoom: 16,
+        dragging: false, // Default mati sesuai keinginan Anda di kode awal
+        layers: [googleSatellite]
     });
 
-    // Kontrol Peta Pojok Kanan Atas (User bisa pilih tampilan sesuka hati)
+    // Kontrol Peta Pojok Kanan Atas
     var baseMaps = {
         "🛰️ Satelit Bumi (Google)": googleSatellite,
         "⛰️ Peta Medan / Kontur": googleTerrain,
-        "🗺️ Peta Stand
+        "🗺️ Peta Standar (OSM)": osm,
+        "🥾 Topografi (OpenTopo)": openTopo
+    };
+    L.control.layers(baseMaps).addTo(map);
+
+    // Inisialisasi Marker Utama yang dapat digeser
+    var marker = L.marker(defaultLocation, { draggable: true }).addTo(map);
+    updateCoords(defaultLocation[0], defaultLocation[1]);
+
+    // Fungsi memperbarui teks koordinat di HTML
+    function updateCoords(lat, lng) {
+        document.getElementById('lat').innerText = lat.toFixed(6);
+        document.getElementById('lng').innerText = lng.toFixed(6);
+    }
+
+    // Event ketika penanda (marker) selesai digeser oleh user
+    marker.on('dragend', function (e) {
+        var position = marker.getLatLng();
+        updateCoords(position.lat, position.lng);
+    });
+
+    // Event ketika peta diklik (pindahkan marker ke lokasi klik)
+    map.on('click', function (e) {
+        marker.setLatLng(e.latlng);
+        updateCoords(e.latlng.lat, e.latlng.lng);
+    });
+
+    // --- FUNGSIONALITAS TOMBOL PANEL KONTROL ---
+
+    // 1. Fitur Pencarian Alamat menggunakan Geocoding Gratis (Nominatim OpenStreetMap)
+    function searchLocation() {
+        var query = document.getElementById('search').value;
+        if (!query) return alert('Silakan masukkan nama tempat terlebih dahulu!');
+
+        fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data && data.length > 0) {
+                    var lat = parseFloat(data[0].lat);
+                    var lon = parseFloat(data[0].lon);
+                    var newPos = [lat, lon];
+
+                    map.setView(newPos, 16);
+                    marker.setLatLng(newPos);
+                    updateCoords(lat, lon);
+                } else {
+                    alert('Lokasi tidak ditemukan. Coba kata kunci lain.');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('Gagal menghubungi layanan pencarian.');
+            });
+    }
+
+    // 2. Fitur Deteksi GPS Pengguna
+    function getMyLocation() {
+        if (!navigator.geolocation) {
+            return alert('Browser Anda tidak mendukung fitur deteksi lokasi (Geolocation).');
+        }
+
+        navigator.geolocation.getCurrentPosition(function (position) {
+            var lat = position.coords.latitude;
+            var lng = position.coords.longitude;
+            var myPos = [lat, lng];
+
+            map.setView(myPos, 16);
+            marker.setLatLng(myPos);
+            updateCoords(lat, lng);
+        }, function (error) {
+            alert('Gagal mengambil lokasi. Pastikan izin GPS telah diaktifkan.');
+        });
+    }
+
+    // 3. Fitur Mengaktifkan/Mematikan Fungsi Geser Peta (Drag Peta)
+    var dragButton = document.getElementById('toggle-drag');
+    dragButton.addEventListener('click', function () {
+        if (map.dragging.enabled()) {
+            map.dragging.disable();
+            dragButton.classList.replace('btn-success', 'btn-secondary');
+            dragButton.innerText = '🖱️ Geser OFF';
+        } else {
+            map.dragging.enable();
+            dragButton.classList.replace('btn-secondary', 'btn-success');
+            dragButton.innerText = '🖱️ Geser ON';
+        }
+    });
+
+    // 4. Fitur Salin Koordinat ke Clipboard
+    function copyCoord() {
+        var lat = document.getElementById('lat').innerText;
+        var lng = document.getElementById('lng').innerText;
+        
+        if(lat === '-' || lng === '-') return alert('Koordinat belum tersedia.');
+
+        var textToCopy = lat + ", " + lng;
+        navigator.clipboard.writeText(textToCopy).then(function() {
+            alert('Koordinat berhasil disalin: ' + textToCopy);
+        }, function(err) {
+            alert('Gagal menyalin koordinat secara otomatis.');
+        });
+    }
+</script>
+
+</body>
+</html>
